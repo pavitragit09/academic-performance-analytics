@@ -1,0 +1,141 @@
+@startuml class-diagram
+title APAS - Domain Class Diagram
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam classAttributeIconSize 0
+hide circle
+
+enum Role {
+  STUDENT
+  FACULTY
+  ADMIN
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  LATE
+  MISSING
+}
+
+enum InterventionStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+class User {
+  +userId: int
+  +username: str
+  +passwordHash: str
+  +role: Role
+  +failedLogins: int
+  +lockedUntil: datetime
+}
+
+class Student {
+  +studentId: int
+  +usn: str
+  +name: str
+  +department: str
+  +semester: int
+}
+
+class Faculty {
+  +facultyId: int
+  +name: str
+  +department: str
+}
+
+class Course {
+  +courseId: int
+  +code: str
+  +title: str
+  +semester: int
+}
+
+class Enrollment {
+  +enrollmentId: int
+}
+
+class Assessment {
+  +assessmentId: int
+  +name: str
+  +maxMarks: float
+  +heldOn: date
+}
+
+class MarkEntry {
+  +marks: float
+}
+
+class AttendanceRecord {
+  +sessionDate: date
+  +present: bool
+}
+
+class Assignment {
+  +assignmentId: int
+  +title: str
+  +dueDate: date
+  +maxScore: float
+}
+
+class AssignmentSubmission {
+  +status: SubmissionStatus
+  +score: float
+  +submittedAt: datetime
+}
+
+class ExamResult {
+  +examType: str
+  +marks: float
+  +maxMarks: float
+}
+
+class RiskFlag {
+  +flagId: int
+  +reasons: list[str]
+  +flaggedAt: datetime
+  +active: bool
+}
+
+class Intervention {
+  +interventionId: int
+  +status: InterventionStatus
+  +updatedAt: datetime
+}
+
+class InterventionNote {
+  +actionTaken: str
+  +notedOn: date
+}
+
+class AuditLogEntry {
+  +entryId: int
+  +action: str
+  +entity: str
+  +oldValue: str
+  +newValue: str
+  +timestamp: datetime
+  +ipAddress: str
+}
+
+User "1" -- "0..1" Student
+User "1" -- "0..1" Faculty
+Faculty "1" -- "0..*" Course : teaches >
+Student "1" -- "0..*" Enrollment
+Course "1" -- "0..*" Enrollment
+Course "1" -- "0..*" Assessment
+Course "1" -- "0..*" Assignment
+Assessment "1" -- "0..*" MarkEntry
+Enrollment "1" -- "0..*" MarkEntry
+Enrollment "1" -- "0..*" AttendanceRecord
+Enrollment "1" -- "0..*" ExamResult
+Assignment "1" -- "0..*" AssignmentSubmission
+Enrollment "1" -- "0..*" AssignmentSubmission
+Enrollment "1" -- "0..*" RiskFlag
+RiskFlag "1" -- "0..1" Intervention
+Intervention "1" -- "0..*" InterventionNote
+Faculty "1" -- "0..*" InterventionNote : writes >
+User "1" -- "0..*" AuditLogEntry : performs >
+@enduml

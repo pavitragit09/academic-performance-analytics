@@ -1,0 +1,58 @@
+@startuml component-diagram
+title APAS - Component Diagram (Layered Architecture)
+skinparam componentStyle uml2
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+
+actor "Student" as Student
+actor "Faculty" as Faculty
+actor "Administrator / HoD" as Admin
+
+package "Presentation Layer" {
+  [Web Frontend\n(React SPA)] as FE
+}
+
+package "Application Layer (FastAPI, /api/v1)" {
+  [API Router &\nAuth Middleware] as API
+  [AuthModule] as Auth
+  [DataModule] as Data
+  [AnalyticsModule] as Analytics
+  [DashboardModule] as Dash
+  [InterventionModule] as Interv
+  [Notification Service] as Notify
+  [Audit Logger] as Audit
+}
+
+package "Data Layer" {
+  database "PostgreSQL 15\n(SQLite in dev)" as DB
+}
+
+cloud "SMTP Email Gateway" as SMTP
+
+Student --> FE : HTTPS
+Faculty --> FE : HTTPS
+Admin --> FE : HTTPS
+FE --> API : REST / JSON over TLS 1.2+
+
+API --> Auth : verify session,\nrole check
+API --> Data
+API --> Dash
+API --> Interv
+
+Data --> Analytics : recompute metrics\nafter import
+Dash --> Analytics : compute metrics\nfor dashboards
+Analytics --> Interv : new at-risk flag
+Interv --> Notify : alert faculty
+Notify --> SMTP : SMTP over TLS
+
+Auth --> Audit
+Data --> Audit
+Interv --> Audit
+
+Auth --> DB
+Data --> DB
+Dash --> DB
+Interv --> DB
+Audit --> DB
+@enduml

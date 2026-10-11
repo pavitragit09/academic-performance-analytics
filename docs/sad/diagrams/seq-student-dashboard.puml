@@ -1,0 +1,52 @@
+@startuml seq-student-dashboard
+title Sequence 2 - Student views own performance dashboard
+skinparam shadowing false
+skinparam defaultFontName Arial
+autonumber
+
+actor Student
+participant "Web Frontend" as FE
+participant "API Router &\nAuth Middleware" as API
+participant "AuthModule" as Auth
+participant "DashboardModule" as Dash
+participant "AnalyticsModule" as An
+participant "Audit Logger" as Audit
+database "Database" as DB
+
+Student -> FE : open "My Performance"
+FE -> API : GET /api/v1/dashboard/students/{studentId}
+API -> Auth : validate session
+
+alt session missing or idle > 15 min
+  Auth --> API : invalid
+  API --> FE : 401 SESSION_EXPIRED
+  FE --> Student : redirect to login
+else session valid
+  Auth --> API : user = Student (own studentId = 17)
+  API -> Auth : authorise(user, studentId)
+  alt studentId is not the user's own record
+    Auth -> Audit : log(user, "ACCESS_DENIED", studentId)
+    Audit -> DB : INSERT audit_log
+    Auth --> API : denied
+    API --> FE : 403 FORBIDDEN
+    FE --> Student : "You can only view your own records"
+  else own record
+    Auth --> API : allowed
+    API -> Dash : student_dashboard(studentId)
+    Dash -> DB : load enrolments, marks, attendance,\nassignment statuses, exam results, flags
+    DB --> Dash : rows
+    loop for each enrolled course
+      Dash -> An : attendance_percentage(attended, total)
+      Dash -> An : average_marks(marks)
+      Dash -> An : trend_label(marks)
+      Dash -> An : completion_rate(statuses)
+      Dash -> An : exam_summary(marks)
+      Dash -> An : risk_reasons(...)
+      An --> Dash : metrics
+    end
+    Dash --> API : DashboardDTO
+    API --> FE : 200 OK (JSON)
+    FE --> Student : render cards and trend charts
+  end
+end
+@enduml
