@@ -1,0 +1,55 @@
+@startuml seq-marks-upload-risk
+title Sequence 1 - Faculty uploads marks, system re-evaluates risk and alerts
+skinparam shadowing false
+skinparam defaultFontName Arial
+autonumber
+
+actor Faculty
+participant "Web Frontend" as FE
+participant "API Router &\nAuth Middleware" as API
+participant "AuthModule" as Auth
+participant "DataModule" as Data
+participant "AnalyticsModule" as An
+participant "InterventionModule" as Int
+participant "Notification\nService" as Notify
+participant "Audit Logger" as Audit
+database "Database" as DB
+
+Faculty -> FE : choose course + assessment,\nupload marks.csv
+FE -> API : POST /api/v1/courses/{courseId}/assessments/{id}/marks\n(multipart CSV, session cookie)
+API -> Auth : validate session (idle < 15 min)
+Auth --> API : user = Faculty, id
+API -> Auth : can user edit this course?
+Auth --> API : allowed
+
+API -> Data : import_marks(courseId, assessmentId, rows)
+Data -> Data : validate each row\n(0 <= marks <= maxMarks,\nknown student, no duplicate)
+
+alt every row is invalid
+  Data --> API : ValidationError(row errors)
+  API --> FE : 422 VALIDATION_ERROR + row list
+  FE --> Faculty : show rejected rows
+else at least one valid row
+  Data -> DB : BEGIN; INSERT mark_entries (valid rows)
+  Data -> Audit : log(user, "MARKS_IMPORT", old/new values)
+  Audit -> DB : INSERT audit_log
+  Data -> DB : COMMIT
+
+  loop for each affected student
+    Data -> An : evaluate(studentId, courseId)
+    An -> DB : load attendance, marks history,\nassignment statuses
+    DB --> An : data
+    An -> An : attendance_percentage()\naverage_marks()\ntrend_label() / risk_reasons()
+    alt reasons not empty and no active flag
+      An -> DB : INSERT risk_flag(reasons)
+      An -> Int : open_intervention(flagId)
+      Int -> DB : INSERT intervention(status = OPEN)
+      Int -> Notify : alert course faculty
+      Notify ->> Notify : send email via SMTP\n(async, within 1 min)
+    end
+  end
+  Data --> API : ImportResult(accepted, rejected, newlyFlagged)
+  API --> FE : 201 Created + summary
+  FE --> Faculty : "48 rows saved, 2 rejected,\n3 students newly at risk"
+end
+@enduml
