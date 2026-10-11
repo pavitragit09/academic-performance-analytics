@@ -19,3 +19,13 @@ def status_breakdown(statuses: list) -> dict:
     """Return the count of each assignment status."""
     _validate(statuses)
     return {status: statuses.count(status) for status in VALID_STATUSES}
+
+
+def completion_rate(statuses: list, include_late: bool = False) -> float:
+    """Return the percentage of completed assignments (SRS APAS-F-024).
+
+    Only "submitted" counts as complete unless include_late is True.
+    """
+    counts = status_breakdown(statuses)
+    completed = counts["submitted"] + (counts["late"] if include_late else 0)
+    return round(completed / len(statuses) * 100, 2)
