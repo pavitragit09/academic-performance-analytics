@@ -29,3 +29,21 @@ def completion_rate(statuses: list, include_late: bool = False) -> float:
     counts = status_breakdown(statuses)
     completed = counts["submitted"] + (counts["late"] if include_late else 0)
     return round(completed / len(statuses) * 100, 2)
+
+
+def low_completion_students(
+    students: dict,
+    threshold: float = 75.0,
+    include_late: bool = False,
+) -> list:
+    """Return names of students whose completion rate is below threshold.
+
+    Students with no assignment statuses are skipped.
+    """
+    if not 0 <= threshold <= 100:
+        raise ValueError("threshold must be between 0 and 100")
+    return [
+        name
+        for name, statuses in students.items()
+        if statuses and completion_rate(statuses, include_late) < threshold
+    ]
