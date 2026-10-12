@@ -30,11 +30,17 @@ Existing code and passing unit tests are evidence of implementation and testing.
 
 ### 1. APAS-F-022: Declining marks
 
-The official SRS describes a declining trend as marks decreasing over the last N consecutive assessments, with a default N of 3.
+The official SRS defines a declining trend as marks decreasing over the last N consecutive assessments, with a default N of 3.
 
-The inspected `src/analytics.py` implementation checks consecutive decreases. The separate `src/trend.py` implementation uses regression-based trend analysis.
+The inspected implementations use different rules:
 
-**Action proposed:** Confirm whether APAS-F-022 requires consecutive decreases or regression-based trend classification. Align the official requirement, implementation, and acceptance tests through an approved team decision. Do not assume the two definitions are interchangeable.
+- `src/analytics.py::is_declining` checks whether the last `window` marks are strictly decreasing. Its default window is 3.
+- `src/trend.py::trend_label` classifies marks using a linear regression slope and a tolerance. `flag_declining_students` applies this classification to the selected recent window.
+- `src/trend.py::drop_percentage` calculates percentage change between the first and last marks in the selected window; this is separate from regression-based classification.
+
+For example, `[80, 65, 70]` does not satisfy the strict consecutive-decrease rule, but the existing `test_flag_uses_overall_trend` expects the regression-based implementation to flag it as declining.
+
+**Action proposed:** Confirm with the team which definition APAS-F-022 should use. Align the approved requirement, implementation, and acceptance tests after that decision. Until then, preserve the current SRS wording and leave the official RTM status unchanged. The existing unit tests provide implementation evidence but do not independently establish system-level acceptance.
 
 ### 2. Requirements Traceability Matrix statuses
 
