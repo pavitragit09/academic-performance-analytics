@@ -18,7 +18,8 @@ Course: Software Engineering (team project)
 
 ```
 .github/workflows/ci.yml   CI: runs pytest on every PR and push to main
-src/                       Application code
+src/                       Analytics modules
+src/app/                   FastAPI application, database and API routers
 tests/                     Unit tests (one or more per feature)
 docs/                      SRS, SAD and Test Plan
 requirements.txt           Python dependencies
@@ -35,6 +36,17 @@ python -m venv .venv
 pip install -r requirements.txt
 pytest
 ```
+
+## Run the API
+
+```bash
+uvicorn src.app.main:app --reload
+```
+
+- Health check: http://127.0.0.1:8000/api/v1/health
+- Interactive API docs: http://127.0.0.1:8000/docs
+
+The server creates a local SQLite database, `apas.db`, on first start. Set `APAS_DATABASE_URL` to use a different database.
 
 ## Team workflow
 
