@@ -1,6 +1,6 @@
 
 """Marks trend and decline detection for APAS."""
-
+from src.analytics import is_declining
 
 def trend_slope(marks: list) -> float:
     """Return the linear trend slope of marks, from oldest to newest.
@@ -61,22 +61,27 @@ def drop_percentage(marks: list, window: int = 3) -> float:
     )
 
 
+
 def flag_declining_students(
     students: dict,
     window: int = 3,
     tolerance: float = 1.0,
 ) -> list:
-    """Return names of students with a declining recent marks trend."""
+    """Return students whose last N marks strictly decrease.
+
+    Regression trend is kept separate and is not used
+    for the declining-student flagging decision.
+    """
     if window < 2:
         raise ValueError("window must be at least 2")
+
+    if tolerance < 0:
+        raise ValueError("tolerance cannot be negative")
 
     flagged = []
 
     for name, marks in students.items():
-        if (
-            len(marks) >= window
-            and trend_label(marks[-window:], tolerance) == "declining"
-        ):
+        if is_declining(marks, window):
             flagged.append(name)
 
     return flagged

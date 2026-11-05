@@ -69,10 +69,16 @@ def test_flag_declining_students():
     assert flag_declining_students(students) == ["A"]
 
 
-def test_flag_uses_overall_trend():
-    students = {"A": [80, 65, 70]}
+def test_flag_uses_strict_consecutive_decline():
+    students = {
+        "A": [80, 70, 60],
+        "B": [80, 65, 70],
+        "C": [50, 50, 40],
+    }
+
     assert flag_declining_students(students) == ["A"]
 
+    
 
 def test_flag_rejects_invalid_window():
     with pytest.raises(ValueError):
