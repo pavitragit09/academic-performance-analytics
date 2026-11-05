@@ -1,7 +1,7 @@
 """Database tables for the domain model in the SAD (Figure 2)."""
 
 import enum
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import JSON, Boolean, Date, DateTime, Enum, Float, ForeignKey, Integer, String, Text
 from sqlalchemy import UniqueConstraint
@@ -43,6 +43,36 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     failed_logins: Mapped[int] = mapped_column(Integer, default=0)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+
+class UserSession(Base):
+    """Server-side sessions for authenticated users."""
+
+    __tablename__ = "user_sessions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        index=True,
+    )
+    token_hash: Mapped[str] = mapped_column(
+        String(64),
+        unique=True,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+    )
+    last_activity_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    is_revoked: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    user: Mapped["User"] = relationship()
 
 
 class Student(Base):

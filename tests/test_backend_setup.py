@@ -1,3 +1,4 @@
+
 """Tests for the FastAPI and database setup (issue #26)."""
 
 from datetime import date
@@ -48,15 +49,31 @@ def client(app):
 
 def add_course(db):
     faculty = models.Faculty(name="A. Rao", department="CSE")
-    student = models.Student(usn="PES1UG24AM001", name="Asha", department="CSE", semester=5)
+    student = models.Student(
+        usn="PES1UG24AM001",
+        name="Asha",
+        department="CSE",
+        semester=5,
+    )
     db.add_all([faculty, student])
     db.flush()
-    course = models.Course(code="UE24CS341A", title="SE", semester=5, faculty_id=faculty.id)
+
+    course = models.Course(
+        code="UE24CS341A",
+        title="SE",
+        semester=5,
+        faculty_id=faculty.id,
+    )
     db.add(course)
     db.flush()
-    enrollment = models.Enrollment(student_id=student.id, course_id=course.id)
+
+    enrollment = models.Enrollment(
+        student_id=student.id,
+        course_id=course.id,
+    )
     db.add(enrollment)
     db.commit()
+
     return course, enrollment
 
 
@@ -77,9 +94,22 @@ def test_app_starts_and_creates_tables(tmp_path):
 
 def test_all_sad_tables_exist(engine):
     expected = {
-        "users", "students", "faculty", "courses", "enrollments", "assessments",
-        "mark_entries", "attendance_records", "assignments", "assignment_submissions",
-        "exam_results", "risk_flags", "interventions", "intervention_notes", "audit_log",
+        "users",
+        "students",
+        "faculty",
+        "courses",
+        "enrollments",
+        "assessments",
+        "mark_entries",
+        "attendance_records",
+        "assignments",
+        "assignment_submissions",
+        "exam_results",
+        "risk_flags",
+        "interventions",
+        "intervention_notes",
+        "audit_log",
+        "user_sessions",
     }
 
     assert expected == set(Base.metadata.tables)
@@ -88,7 +118,13 @@ def test_all_sad_tables_exist(engine):
 
 def test_duplicate_enrollment_is_rejected(db):
     course, enrollment = add_course(db)
-    db.add(models.Enrollment(student_id=enrollment.student_id, course_id=course.id))
+
+    db.add(
+        models.Enrollment(
+            student_id=enrollment.student_id,
+            course_id=course.id,
+        )
+    )
 
     with pytest.raises(IntegrityError):
         db.commit()
@@ -96,14 +132,32 @@ def test_duplicate_enrollment_is_rejected(db):
 
 def test_duplicate_mark_for_assessment_is_rejected(db):
     course, enrollment = add_course(db)
+
     assessment = models.Assessment(
-        course_id=course.id, name="ISA 1", max_marks=40, held_on=date(2026, 10, 5)
+        course_id=course.id,
+        name="ISA 1",
+        max_marks=40,
+        held_on=date(2026, 10, 5),
     )
     db.add(assessment)
     db.flush()
-    db.add(models.MarkEntry(assessment_id=assessment.id, enrollment_id=enrollment.id, marks=30))
+
+    db.add(
+        models.MarkEntry(
+            assessment_id=assessment.id,
+            enrollment_id=enrollment.id,
+            marks=30,
+        )
+    )
     db.commit()
-    db.add(models.MarkEntry(assessment_id=assessment.id, enrollment_id=enrollment.id, marks=31))
+
+    db.add(
+        models.MarkEntry(
+            assessment_id=assessment.id,
+            enrollment_id=enrollment.id,
+            marks=31,
+        )
+    )
 
     with pytest.raises(IntegrityError):
         db.commit()
@@ -118,9 +172,14 @@ def test_foreign_keys_are_enforced(db):
 
 def test_risk_flag_stores_reasons_and_defaults(db):
     _course, enrollment = add_course(db)
-    flag = models.RiskFlag(enrollment_id=enrollment.id, reasons=["low attendance", "low marks"])
+
+    flag = models.RiskFlag(
+        enrollment_id=enrollment.id,
+        reasons=["low attendance", "low marks"],
+    )
     db.add(flag)
     db.flush()
+
     intervention = models.Intervention(flag_id=flag.id)
     db.add(intervention)
     db.commit()
@@ -132,7 +191,11 @@ def test_risk_flag_stores_reasons_and_defaults(db):
 
 
 def test_user_defaults_and_enum_role(db):
-    user = models.User(username="faculty.rao", password_hash="hash", role=models.Role.FACULTY)
+    user = models.User(
+        username="faculty.rao",
+        password_hash="hash",
+        role=models.Role.FACULTY,
+    )
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -151,7 +214,11 @@ def test_app_error_uses_standard_body(app, client):
 
     assert response.status_code == 403
     assert response.json() == {
-        "error": {"code": "FORBIDDEN", "message": "Not this course's faculty", "details": []}
+        "error": {
+            "code": "FORBIDDEN",
+            "message": "Not this course's faculty",
+            "details": [],
+        }
     }
 
 
