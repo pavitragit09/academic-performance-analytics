@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from src.app.config import API_PREFIX
 from src.app.database import init_db
 from src.app.errors import register_error_handlers
-from src.app.routers import health
+from src.app.routers import assignments, health
 
 
 @asynccontextmanager
@@ -23,6 +23,7 @@ def create_app() -> FastAPI:
     application = FastAPI(title="Academic Performance Analytics System", lifespan=lifespan)
     register_error_handlers(application)
     application.include_router(health.router, prefix=API_PREFIX)
+    application.include_router(assignments.router, prefix=API_PREFIX)
     return application
 
 
