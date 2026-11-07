@@ -1,3 +1,4 @@
+
 """Exam results service and request/response schemas (APAS-F-013, SAD Table 14).
 
 Faculty submit a batch of results for one exam of one course. Each row is checked
@@ -13,11 +14,17 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.app.errors import AppError
-from src.app.models import AuditLogEntry, Course, Enrollment, ExamResult, Student
+from src.app.models import (
+    AuditLogEntry,
+    Course,
+    Enrollment,
+    ExamResult,
+    Faculty,
+    Student,
+)
 from src.app.validation import validate_marks
 from src.exam_summary import exam_summary
 
-# ISA = internal assessment, ESA = end-semester assessment (SRS APAS-F-013).
 ExamType = Literal["ISA", "ESA"]
 
 
@@ -72,16 +79,40 @@ class CourseExams(BaseModel):
     summary: ExamSummaryOut | None
 
 
-def get_course(db: Session, course_id: int) -> Course:
+def get_course(db: Session, course_id: int, user_id: int) -> Course:
+    """Return a course only if it belongs to the authenticated faculty member."""
+
     course = db.get(Course, course_id)
+
     if course is None:
         raise AppError(404, "NOT_FOUND", "Course not found")
+
+    faculty = db.scalar(
+        select(Faculty).where(
+            Faculty.id == course.faculty_id,
+            Faculty.user_id == user_id,
+        )
+    )
+
+    if faculty is None:
+        raise AppError(
+            403,
+            "FORBIDDEN",
+            "You do not have permission to access this course",
+        )
+
     return course
 
 
-def save_exam_results(db: Session, course_id: int, data: ExamUpload) -> UploadReport:
+def save_exam_results(
+    db: Session,
+    course_id: int,
+    data: ExamUpload,
+    user_id: int,
+) -> UploadReport:
     """Save valid rows and report the rest. Writes an audit entry for every saved result."""
-    get_course(db, course_id)
+
+    get_course(db, course_id, user_id)
 
     enrollments = {
         usn: enrollment_id
@@ -91,6 +122,7 @@ def save_exam_results(db: Session, course_id: int, data: ExamUpload) -> UploadRe
             .where(Enrollment.course_id == course_id)
         )
     }
+
     already_saved = set(
         db.scalars(
             select(ExamResult.enrollment_id).where(
@@ -106,17 +138,26 @@ def save_exam_results(db: Session, course_id: int, data: ExamUpload) -> UploadRe
 
     for row_number, row in enumerate(data.results, start=1):
         enrollment_id = enrollments.get(row.usn)
+
         try:
             if enrollment_id is None:
                 raise ValueError("student is not enrolled in this course")
+
             if enrollment_id in seen:
                 raise ValueError("duplicate entry within uploaded batch")
+
             seen.add(enrollment_id)
             validate_marks(row.marks, data.max_marks)
+
             if enrollment_id in already_saved:
-                raise ValueError("a result for this student and exam type already exists")
+                raise ValueError(
+                    "a result for this student and exam type already exists"
+                )
+
         except ValueError as exc:
-            rejected.append(RejectedRow(row=row_number, reason=str(exc)))
+            rejected.append(
+                RejectedRow(row=row_number, reason=str(exc))
+            )
             continue
 
         result = ExamResult(
@@ -125,32 +166,48 @@ def save_exam_results(db: Session, course_id: int, data: ExamUpload) -> UploadRe
             marks=row.marks,
             max_marks=data.max_marks,
         )
+
         db.add(result)
         db.flush()
+
         db.add(
             AuditLogEntry(
-                user_id=None,  # filled in once login is merged (APAS-SR-005)
+                user_id=user_id,
                 action="CREATE",
                 entity=f"exam_result:{result.id}",
                 old_value=None,
-                new_value=f"{row.usn} {data.exam_type} {row.marks}/{data.max_marks}",
+                new_value=(
+                    f"{row.usn} {data.exam_type} "
+                    f"{row.marks}/{data.max_marks}"
+                ),
             )
         )
+
         accepted += 1
 
     db.commit()
+
     return UploadReport(accepted=accepted, rejected=rejected)
 
 
-def course_exam_results(db: Session, course_id: int, exam_type: ExamType) -> CourseExams:
-    """Return the saved results for one exam type plus the class summary for the dashboard."""
-    get_course(db, course_id)
+def course_exam_results(
+    db: Session,
+    course_id: int,
+    exam_type: ExamType,
+    user_id: int,
+) -> CourseExams:
+    """Return exam results and summary for a course owned by the faculty member."""
+
+    get_course(db, course_id, user_id)
 
     rows = db.execute(
         select(Student.usn, Student.name, ExamResult)
         .join(Enrollment, Enrollment.student_id == Student.id)
         .join(ExamResult, ExamResult.enrollment_id == Enrollment.id)
-        .where(Enrollment.course_id == course_id, ExamResult.exam_type == exam_type)
+        .where(
+            Enrollment.course_id == course_id,
+            ExamResult.exam_type == exam_type,
+        )
         .order_by(Student.usn)
     ).all()
 
@@ -164,9 +221,19 @@ def course_exam_results(db: Session, course_id: int, exam_type: ExamType) -> Cou
         )
         for usn, name, result in rows
     ]
+
     summary = None
+
     if rows:
         summary = ExamSummaryOut(
-            **exam_summary([r.marks for _, _, r in rows], max_marks=rows[0][2].max_marks)
+            **exam_summary(
+                [result.marks for _, _, result in rows],
+                max_marks=rows[0][2].max_marks,
+            )
         )
-    return CourseExams(exam_type=exam_type, results=results, summary=summary)
+
+    return CourseExams(
+        exam_type=exam_type,
+        results=results,
+        summary=summary,
+    )
