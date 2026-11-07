@@ -9,7 +9,7 @@ from fastapi import Depends, FastAPI
 from src.app.config import API_PREFIX
 from src.app.database import init_db
 from src.app.errors import register_error_handlers
-from src.app.routers import auth, health
+from src.app.routers import auth, exams, health
 from src.app.routers.auth import get_current_user
 
 
@@ -35,15 +35,9 @@ def create_app() -> FastAPI:
     register_error_handlers(application)
 
     # Register API routers.
-    application.include_router(
-        health.router,
-        prefix=API_PREFIX,
-    )
-
-    application.include_router(
-        auth.router,
-        prefix=API_PREFIX,
-    )
+    application.include_router(health.router, prefix=API_PREFIX)
+    application.include_router(auth.router, prefix=API_PREFIX)
+    application.include_router(exams.router, prefix=API_PREFIX)
 
     return application
 
