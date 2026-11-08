@@ -95,7 +95,7 @@ class Faculty(Base):
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), unique=True)
     name: Mapped[str] = mapped_column(String(120))
     department: Mapped[str] = mapped_column(String(120))
-
+    email: Mapped[str | None] = mapped_column(String(255))  
     courses: Mapped[list["Course"]] = relationship(back_populates="faculty")
 
 
