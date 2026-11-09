@@ -502,3 +502,19 @@ def test_each_saved_result_writes_an_audit_entry(
     assert entries[0].entity.startswith("exam_result:")
     assert "PES1UG24AM001" in entries[0].new_value
     assert entries[0].user_id == faculty_user
+
+
+
+# TC-Sec-04: an injection string in a data field is rejected and no table is dropped
+def test_sql_injection_in_usn_is_rejected_and_tables_survive(client, engine, course_id):
+    body = upload(
+        client,
+        course_id,
+        results=[{"usn": "'; DROP TABLE exam_results; --", "marks": 50}],
+    ).json()
+
+    assert body["accepted"] == 0
+    assert len(body["rejected"]) == 1
+
+    with Session(engine) as db:
+        assert db.scalars(select(models.ExamResult)).all() == []

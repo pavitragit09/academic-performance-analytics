@@ -393,3 +393,31 @@ def test_student_cannot_access_another_students_record(
         )
     )
     assert audit_entry is not None
+
+
+
+# TC-Auth-02.2: a student cannot call a faculty-only function
+def test_student_cannot_access_faculty_endpoint(client, student_user):
+    login(client, "student1", "StudentPass123!")
+
+    response = client.get("/api/v1/test/faculty")
+
+    assert response.status_code == 403
+
+
+# TC-Sec-04: injection strings are handled safely in the login fields
+def test_login_with_sql_injection_strings_is_rejected(client, student_user, db):
+    attempts = [
+        ("' OR '1'='1", "' OR '1'='1"),
+        ("student1' --", "anything"),
+        ("'; DROP TABLE users; --", "anything"),
+    ]
+
+    for username, password in attempts:
+        response = login(client, username, password)
+        assert response.status_code == 401
+
+    assert db.scalar(select(models.UserSession)) is None
+    assert db.scalar(
+        select(models.User).where(models.User.username == "student1")
+    ) is not None
