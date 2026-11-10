@@ -8,6 +8,7 @@ from fastapi import Depends, FastAPI
 from src.app.config import API_PREFIX
 from src.app.database import init_db
 from src.app.errors import register_error_handlers
+feature/course-student-records
 from src.app.routers import (
     assignments,
     auth,
@@ -18,6 +19,8 @@ from src.app.routers import (
     records,
     risk,
 )
+from src.app.routers import assignments, auth, dashboard, exams, faculty_dashboard, health, risk, 
+main
 from src.app.routers.auth import get_current_user
 
 
@@ -30,7 +33,6 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 def create_app() -> FastAPI:
     """Create the APAS application."""
-
     application = FastAPI(
         title="Academic Performance Analytics System",
         lifespan=lifespan,
@@ -46,6 +48,7 @@ def create_app() -> FastAPI:
     application.include_router(health.router, prefix=API_PREFIX)
     application.include_router(auth.router, prefix=API_PREFIX)
     application.include_router(exams.router, prefix=API_PREFIX)
+    application.include_router(users.router, prefix=API_PREFIX)
     application.include_router(risk.router, prefix=API_PREFIX)
     application.include_router(dashboard.router, prefix=API_PREFIX)
     application.include_router(assignments.router, prefix=API_PREFIX)
