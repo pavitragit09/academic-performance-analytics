@@ -8,7 +8,7 @@ from fastapi import Depends, FastAPI
 from src.app.config import API_PREFIX
 from src.app.database import init_db
 from src.app.errors import register_error_handlers
-from src.app.routers import assignments, auth, dashboard, exams, health, risk
+from src.app.routers import assignments, auth, dashboard, exams, faculty_dashboard, health, risk
 from src.app.routers.auth import get_current_user
 
 
@@ -40,6 +40,7 @@ def create_app() -> FastAPI:
     application.include_router(risk.router, prefix=API_PREFIX)
     application.include_router(dashboard.router, prefix=API_PREFIX)
     application.include_router(assignments.router, prefix=API_PREFIX)
+    application.include_router(faculty_dashboard.router, prefix=API_PREFIX)
 
     return application
 
