@@ -1,4 +1,3 @@
-
 """FastAPI application entry point."""
 
 from collections.abc import AsyncIterator
