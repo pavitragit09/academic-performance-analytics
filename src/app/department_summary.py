@@ -29,9 +29,9 @@ def department_summary(
     db: Session,
     department: str,
     user: User,
-    attendance_threshold: float = 75.0,
-    marks_threshold: float = 40.0,
-    window: int = 3,
+    attendance_threshold: float | None = None,
+    marks_threshold: float | None = None,
+    window: int | None = None,
 ) -> dict:
     """Average performance and at-risk count for each course in one department."""
     courses = db.execute(

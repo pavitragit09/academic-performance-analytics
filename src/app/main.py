@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from src.app.config import API_PREFIX
 from src.app.database import init_db
 from src.app.errors import register_error_handlers
+from src.app.tls import TLSEnforcementMiddleware
 from src.app.routers import (
     assignments,
     auth,
@@ -22,6 +23,7 @@ from src.app.routers import (
     records,
     reports,
     risk,
+    settings,
     users,
 )
 from src.app.routers.auth import get_current_user
@@ -49,6 +51,9 @@ def create_app() -> FastAPI:
     # Register standard error responses.
     register_error_handlers(application)
 
+    # Enforce TLS 1.2+ when APAS_ENFORCE_TLS is set (APAS-SR-001).
+    application.add_middleware(TLSEnforcementMiddleware)
+
     # Register API routers.
     application.include_router(health.router, prefix=API_PREFIX)
     application.include_router(auth.router, prefix=API_PREFIX)
@@ -61,6 +66,7 @@ def create_app() -> FastAPI:
     application.include_router(records.router, prefix=API_PREFIX)
     application.include_router(data_entry.router, prefix=API_PREFIX)
     application.include_router(reports.router, prefix=API_PREFIX)
+    application.include_router(settings.router, prefix=API_PREFIX)
 
     # Web UI (APAS-NF-004): static pages that call the API above.
     application.mount("/app", StaticFiles(directory=WEB_DIR, html=True), name="web")

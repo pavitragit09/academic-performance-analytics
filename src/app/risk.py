@@ -46,7 +46,24 @@ class AtRiskStudent(BaseModel):
     flagged_at: datetime = Field(alias="flaggedAt")
 
 
-def current_reasons(db: Session, enrollment_id: int) -> list[str]:
+def current_reasons(
+    db: Session,
+    enrollment_id: int,
+    attendance_threshold: float | None = None,
+    marks_threshold: float | None = None,
+    trend_window: int | None = None,
+) -> list[str]:
+    """Return why a student is at risk right now (empty list = fine)."""
+    if attendance_threshold is None or marks_threshold is None or trend_window is None:
+        from src.app.thresholds import get_analytics_thresholds
+
+        configured = get_analytics_thresholds(db)
+        if attendance_threshold is None:
+            attendance_threshold = configured.attendance_threshold
+        if marks_threshold is None:
+            marks_threshold = configured.marks_threshold
+        if trend_window is None:
+            trend_window = configured.trend_window
     """Return why a student is at risk right now (empty list = fine)."""
     presence = db.scalars(
         select(AttendanceRecord.present).where(AttendanceRecord.enrollment_id == enrollment_id)
@@ -66,12 +83,25 @@ def current_reasons(db: Session, enrollment_id: int) -> list[str]:
     history = [round(marks / max_marks * 100, 2) for marks, max_marks in rows if max_marks > 0]
     avg = average_marks(history) if history else NO_DATA_PASSES
 
-    return risk_reasons(attendance_pct, avg, history)
+    return risk_reasons(attendance_pct, avg, history, attendance_threshold=attendance_threshold, marks_threshold=marks_threshold, decline_window=trend_window)
 
 
-def evaluate_enrollment(db: Session, enrollment: Enrollment, course: Course) -> RiskAlert | None:
+def evaluate_enrollment(
+    db: Session,
+    enrollment: Enrollment,
+    course: Course,
+    attendance_threshold: float | None = None,
+    marks_threshold: float | None = None,
+    trend_window: int | None = None,
+) -> RiskAlert | None:
     """Update the saved flag for one student; return an alert only if newly flagged."""
-    reasons = current_reasons(db, enrollment.id)
+    reasons = current_reasons(
+        db,
+        enrollment.id,
+        attendance_threshold=attendance_threshold,
+        marks_threshold=marks_threshold,
+        trend_window=trend_window,
+    )
     active = db.scalar(
         select(RiskFlag).where(RiskFlag.enrollment_id == enrollment.id, RiskFlag.active.is_(True))
     )
@@ -97,7 +127,12 @@ def evaluate_enrollment(db: Session, enrollment: Enrollment, course: Course) -> 
 
 
 def check_course(
-    db: Session, course_id: int, user_id: int
+    db: Session,
+    course_id: int,
+    user_id: int,
+    attendance_threshold: float | None = None,
+    marks_threshold: float | None = None,
+    trend_window: int | None = None,
 ) -> tuple[RiskCheckReport, list[RiskAlert]]:
     """Check every student in a course. Returns the report and the alerts to send."""
     course = get_course(db, course_id, user_id)
@@ -107,7 +142,14 @@ def check_course(
 
     alerts = []
     for enrollment in enrollments:
-        alert = evaluate_enrollment(db, enrollment, course)
+        alert = evaluate_enrollment(
+            db,
+            enrollment,
+            course,
+            attendance_threshold=attendance_threshold,
+            marks_threshold=marks_threshold,
+            trend_window=trend_window,
+        )
         if alert is not None:
             alerts.append(alert)
     db.commit()

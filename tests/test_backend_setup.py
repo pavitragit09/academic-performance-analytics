@@ -110,6 +110,7 @@ def test_all_sad_tables_exist(engine):
         "intervention_notes",
         "audit_log",
         "user_sessions",
+        "analytics_thresholds",
     }
 
     assert expected == set(Base.metadata.tables)
