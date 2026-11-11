@@ -1,7 +1,7 @@
 """Course and student records router (APAS-F-015)."""
 
 from typing import Any
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -54,11 +54,37 @@ class EnrollStudentRequest(BaseModel):
     usn: str
 
 
-async def _extract_csv_text(request: Request) -> str:
-    """Extract CSV text from raw body, JSON, or multipart payload."""
-    content_type = request.headers.get("content-type", "").lower()
-    body = await request.body()
+async def _extract_csv_text(
+    request: Request,
+    file: UploadFile | None = None,
+) -> str:
+    """Extract CSV text from standard UploadFile, multipart form, raw body, or JSON."""
+    if file is not None:
+        content = await file.read()
+        if not content:
+            raise AppError(400, "BAD_FILE", "Empty file uploaded")
+        try:
+            return content.decode("utf-8")
+        except UnicodeDecodeError:
+            return content.decode("latin-1")
 
+    content_type = request.headers.get("content-type", "").lower()
+    if "multipart/form-data" in content_type:
+        form = await request.form()
+        for value in form.values():
+            if hasattr(value, "read"):
+                content = await value.read()
+                if not content:
+                    raise AppError(400, "BAD_FILE", "Empty file uploaded")
+                try:
+                    return content.decode("utf-8")
+                except UnicodeDecodeError:
+                    return content.decode("latin-1")
+            elif isinstance(value, str):
+                return value
+        raise AppError(400, "BAD_FILE", "No file found in multipart form")
+
+    body = await request.body()
     if not body:
         raise AppError(400, "BAD_FILE", "Empty request body")
 
@@ -71,27 +97,6 @@ async def _extract_csv_text(request: Request) -> str:
         except Exception:
             raise AppError(400, "BAD_FILE", "Invalid JSON body, expected {'csv': '...'}")
 
-    if "multipart/form-data" in content_type:
-        from email import message_from_bytes
-
-        msg = message_from_bytes(f"Content-Type: {content_type}\r\n\r\n".encode() + body)
-        for part in msg.walk():
-            filename = part.get_filename()
-            part_type = part.get_content_type()
-            if filename or part_type in ("text/csv", "text/plain", "application/octet-stream"):
-                payload = part.get_payload(decode=True)
-                if payload:
-                    try:
-                        return payload.decode("utf-8")
-                    except UnicodeDecodeError:
-                        return payload.decode("latin-1")
-        # If no explicit file attachment found, decode raw body
-        try:
-            return body.decode("utf-8")
-        except UnicodeDecodeError:
-            return body.decode("latin-1")
-
-    # Raw text / plain CSV
     try:
         return body.decode("utf-8")
     except UnicodeDecodeError:
@@ -208,11 +213,12 @@ def get_students(
 @router.post("/students/upload", status_code=201)
 async def upload_students_csv(
     request: Request,
+    file: UploadFile | None = File(None),
     db: Session = Depends(get_db),
     user: User = Depends(require_admin),
 ) -> dict[str, Any]:
     """Admin-only: bulk import students via CSV."""
-    csv_text = await _extract_csv_text(request)
+    csv_text = await _extract_csv_text(request, file)
     return import_students_csv(db=db, csv_data=csv_text)
 
 
@@ -255,9 +261,10 @@ def get_course_enrollments(
 async def upload_enrollments_csv(
     course_id: int,
     request: Request,
+    file: UploadFile | None = File(None),
     db: Session = Depends(get_db),
     user: User = Depends(require_admin),
 ) -> dict[str, Any]:
     """Admin-only: bulk import course enrolments via CSV."""
-    csv_text = await _extract_csv_text(request)
+    csv_text = await _extract_csv_text(request, file)
     return import_enrollments_csv(db=db, course_id=course_id, csv_data=csv_text)

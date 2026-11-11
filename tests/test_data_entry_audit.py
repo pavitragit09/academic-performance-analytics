@@ -304,3 +304,18 @@ def test_course_faculty_access_control(app, engine):
     )
     assert resp_att.status_code == 403
     assert resp_att.json()["error"]["code"] == "FORBIDDEN"
+
+
+def test_upload_marks_via_uploadfile_multipart(app, engine):
+    """Verify marks entry via standard multipart UploadFile."""
+    with Session(engine) as db:
+        fac_client, _, fac_id = create_user_and_login(app, db, "fac_multipart", models.Role.FACULTY, faculty_profile=True)
+        cid, aid, _, _, _ = setup_course_with_enrolled_students(db, fac_id)
+
+    csv_content = "usn,marks\nPES1UG24AM001,40\n"
+    res = fac_client.post(
+        f"/api/v1/courses/{cid}/assessments/{aid}/marks",
+        files={"file": ("marks.csv", csv_content.encode("utf-8"), "text/csv")},
+    )
+    assert res.status_code == 201
+    assert res.json()["accepted"] == 1
