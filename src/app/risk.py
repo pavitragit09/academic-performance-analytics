@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from src.analytics import attendance_percentage, average_marks, risk_reasons
 from src.app.exam_results import get_course
+from src.app.interventions import ensure_intervention
 from src.app.models import (
     Assessment,
     AttendanceRecord,
@@ -113,11 +114,14 @@ def evaluate_enrollment(
 
     if active is not None:
         active.reasons = reasons  # still at risk: keep reasons current, no new alert
+        ensure_intervention(db, active)
         return None
 
-    db.add(RiskFlag(enrollment_id=enrollment.id, reasons=reasons, active=True))
-    return RiskAlert(
-        faculty_email=course.faculty.email,
+    flag = RiskFlag(enrollment_id=enrollment.id, reasons=reasons, active=True)
+    db.add(flag)
+    db.flush()
+    ensure_intervention(db, flag)  # a newly flagged student gets an open intervention
+    return RiskAlert(        faculty_email=course.faculty.email,
         faculty_name=course.faculty.name,
         usn=enrollment.student.usn,
         student_name=enrollment.student.name,
