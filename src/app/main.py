@@ -8,7 +8,6 @@ from fastapi import Depends, FastAPI
 from src.app.config import API_PREFIX
 from src.app.database import init_db
 from src.app.errors import register_error_handlers
-feature/course-student-records
 from src.app.routers import (
     assignments,
     auth,
@@ -18,9 +17,8 @@ from src.app.routers import (
     health,
     records,
     risk,
+    users,
 )
-from src.app.routers import assignments, auth, dashboard, exams, faculty_dashboard, health, risk, 
-main
 from src.app.routers.auth import get_current_user
 
 
