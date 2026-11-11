@@ -12,6 +12,7 @@ from src.app.routers import (
     assignments,
     auth,
     dashboard,
+    data_entry,
     exams,
     faculty_dashboard,
     health,
@@ -52,6 +53,7 @@ def create_app() -> FastAPI:
     application.include_router(assignments.router, prefix=API_PREFIX)
     application.include_router(faculty_dashboard.router, prefix=API_PREFIX)
     application.include_router(records.router, prefix=API_PREFIX)
+    application.include_router(data_entry.router, prefix=API_PREFIX)
 
     return application
 
