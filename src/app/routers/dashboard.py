@@ -1,5 +1,5 @@
 
-"""Student dashboard API (APAS-F-030)."""
+"""Student dashboard API (APAS-F-030 and APAS-F-034)."""
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import and_, select
@@ -73,7 +73,8 @@ def get_student_dashboard(
 
     if enrollment_ids:
 
-        # Retrieve marks and their corresponding assessments.
+        # Retrieve marks and their corresponding assessments
+        # in chronological order for trend visualisation.
         mark_entries = db.execute(
             select(MarkEntry, Assessment, Enrollment)
             .join(
@@ -87,7 +88,10 @@ def get_student_dashboard(
             .where(
                 MarkEntry.enrollment_id.in_(enrollment_ids)
             )
-            .order_by(Assessment.held_on.desc())
+            .order_by(
+                Assessment.held_on.asc(),
+                MarkEntry.id.asc(),
+            )
         ).all()
 
         for entry, assessment, enrollment in mark_entries:
@@ -102,17 +106,29 @@ def get_student_dashboard(
                 "held_on": assessment.held_on.isoformat(),
             })
 
-        # Retrieve attendance records.
-        attendance_records = db.scalars(
-            select(AttendanceRecord)
+        # Retrieve attendance with its course information,
+        # in chronological order for per-course trends.
+        attendance_records = db.execute(
+            select(AttendanceRecord, Enrollment)
+            .join(
+                Enrollment,
+                AttendanceRecord.enrollment_id == Enrollment.id,
+            )
             .where(
                 AttendanceRecord.enrollment_id.in_(enrollment_ids)
             )
-            .order_by(AttendanceRecord.session_date.desc())
+            .order_by(
+                AttendanceRecord.session_date.asc(),
+                AttendanceRecord.id.asc(),
+            )
         ).all()
 
-        for record in attendance_records:
+        for record, enrollment in attendance_records:
+            course = courses.get(enrollment.course_id)
+
             attendance.append({
+                "course_code": course.code if course else None,
+                "course_title": course.title if course else None,
                 "session_date": record.session_date.isoformat(),
                 "present": record.present,
             })

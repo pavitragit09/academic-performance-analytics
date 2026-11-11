@@ -1,3 +1,4 @@
+
 /* APAS web UI (APAS-NF-004): responsive layout, WCAG 2.1 AA colours (all text >= 4.5:1). */
 :root {
   --bg: #f5f7fa;
@@ -125,14 +126,99 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .risk-list li { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--risk); border-radius: 4px; padding: 10px 14px; }
 
 .spaced { margin-top: 16px; }
-
 .empty { color: var(--muted); font-style: italic; }
 
+/* ---------------- Student Trend Charts (APAS-F-034) ---------------- */
+
+.course-trend-title {
+  margin: 28px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border);
+  color: var(--primary);
+  font-size: 1.1rem;
+}
+
+.trend-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin: 12px 0 20px;
+  min-width: 0;
+}
+
+.trend-card h3 {
+  color: var(--primary);
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+
+.trend-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  overflow: visible;
+  margin: 8px 0 16px;
+}
+
+.chart-grid {
+  stroke: #d0d5dd;
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.chart-line {
+  fill: none;
+  stroke: var(--bar);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-point {
+  fill: var(--primary);
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.chart-label {
+  fill: var(--muted);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 11px;
+}
+
+.trend-card .table-wrap {
+  margin-top: 8px;
+}
+
+.trend-card table {
+  min-width: 300px;
+}
+
+.trend-card caption {
+  color: var(--primary);
+}
+
+/* Keep chart labels readable on smaller screens. */
 @media (max-width: 600px) {
   h1 { font-size: 1.4rem; }
   main { padding-top: 16px; }
   .panel { padding: 16px; }
   .button-row .button { flex: 1 1 auto; }
+
+  .trend-card {
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+
+  .course-trend-title {
+    font-size: 1rem;
+  }
+
+  .chart-label {
+    font-size: 10px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
