@@ -15,9 +15,9 @@ router = APIRouter(prefix="/dashboard", tags=["Faculty Dashboard"])
 @router.get("/courses/{course_id}")
 def get_course_dashboard(
     course_id: int,
-    attendance_threshold: float = Query(75.0, ge=0, le=100, alias="attendanceThreshold"),
-    marks_threshold: float = Query(40.0, ge=0, le=100, alias="marksThreshold"),
-    window: int = Query(3, ge=2),
+    attendance_threshold: float | None = Query(None, ge=0, le=100, alias="attendanceThreshold"),
+    marks_threshold: float | None = Query(None, ge=0, le=100, alias="marksThreshold"),
+    window: int | None = Query(None, ge=2),
     db: Session = Depends(get_db),
     user: User = Depends(require_roles(Role.FACULTY, Role.ADMIN)),
 ) -> dict:
@@ -39,9 +39,9 @@ def get_departments(
 @router.get("/departments/{department}")
 def get_department_summary(
     department: str,
-    attendance_threshold: float = Query(75.0, ge=0, le=100, alias="attendanceThreshold"),
-    marks_threshold: float = Query(40.0, ge=0, le=100, alias="marksThreshold"),
-    window: int = Query(3, ge=2),
+    attendance_threshold: float | None = Query(None, ge=0, le=100, alias="attendanceThreshold"),
+    marks_threshold: float | None = Query(None, ge=0, le=100, alias="marksThreshold"),
+    window: int | None = Query(None, ge=2),
     db: Session = Depends(get_db),
     user: User = Depends(require_roles(Role.ADMIN)),
 ) -> dict:

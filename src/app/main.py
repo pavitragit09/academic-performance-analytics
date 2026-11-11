@@ -19,6 +19,7 @@ from src.app.routers import (
     records,
     reports,
     risk,
+    settings,
     users,
 )
 from src.app.routers.auth import get_current_user
@@ -56,6 +57,7 @@ def create_app() -> FastAPI:
     application.include_router(records.router, prefix=API_PREFIX)
     application.include_router(data_entry.router, prefix=API_PREFIX)
     application.include_router(reports.router, prefix=API_PREFIX)
+    application.include_router(settings.router, prefix=API_PREFIX)
 
     return application
 

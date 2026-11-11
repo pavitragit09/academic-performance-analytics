@@ -98,10 +98,20 @@ def course_dashboard(
     db: Session,
     course_id: int,
     user: User,
-    attendance_threshold: float = 75.0,
-    marks_threshold: float = 40.0,
-    window: int = 3,
+    attendance_threshold: float | None = None,
+    marks_threshold: float | None = None,
+    window: int | None = None,
 ) -> dict:
+    if attendance_threshold is None or marks_threshold is None or window is None:
+        from src.app.thresholds import get_analytics_thresholds
+
+        configured = get_analytics_thresholds(db)
+        if attendance_threshold is None:
+            attendance_threshold = configured.attendance_threshold
+        if marks_threshold is None:
+            marks_threshold = configured.marks_threshold
+        if window is None:
+            window = configured.trend_window
     """Return the faculty dashboard for one course."""
     course = _course_for(db, course_id, user)
     enrollments = db.execute(

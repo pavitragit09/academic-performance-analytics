@@ -23,9 +23,9 @@ router = APIRouter(prefix="/reports", tags=["Reports"])
 def export_course_report(
     course_id: int,
     report_format: Literal["csv", "pdf"] = Query("csv", alias="format"),
-    attendance_threshold: float = Query(75.0, ge=0, le=100, alias="attendanceThreshold"),
-    marks_threshold: float = Query(40.0, ge=0, le=100, alias="marksThreshold"),
-    window: int = Query(3, ge=2),
+    attendance_threshold: float | None = Query(None, ge=0, le=100, alias="attendanceThreshold"),
+    marks_threshold: float | None = Query(None, ge=0, le=100, alias="marksThreshold"),
+    window: int | None = Query(None, ge=2),
     db: Session = Depends(get_db),
     user: User = Depends(require_roles(Role.FACULTY, Role.ADMIN)),
 ) -> Response:

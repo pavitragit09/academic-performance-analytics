@@ -237,3 +237,15 @@ class AuditLogEntry(Base):
     new_value: Mapped[str | None] = mapped_column(Text)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
     ip_address: Mapped[str | None] = mapped_column(String(45))
+
+class AnalyticsThreshold(Base):
+    __tablename__ = "analytics_thresholds"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    attendance_threshold: Mapped[float] = mapped_column(Float, default=75.0)
+    marks_threshold: Mapped[float] = mapped_column(Float, default=40.0)
+    trend_window: Mapped[int] = mapped_column(Integer, default=3)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+
