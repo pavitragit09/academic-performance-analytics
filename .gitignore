@@ -221,3 +221,6 @@ __marimo__/
 
 # Local APAS development database
 *.db
+
+# axe-core cache for scripts/a11y_audit.py
+scripts/.axe-*.min.js

@@ -43,6 +43,7 @@ pytest
 uvicorn src.app.main:app --reload
 ```
 
+- Web UI: http://127.0.0.1:8000/ (run `python -m scripts.seed_demo` once for demo logins)
 - Health check: http://127.0.0.1:8000/api/v1/health
 - Interactive API docs: http://127.0.0.1:8000/docs
 

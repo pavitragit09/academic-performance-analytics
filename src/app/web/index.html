@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'">
+  <title>APAS – Academic Performance Analytics</title>
+  <link rel="stylesheet" href="app.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <p class="brand"><span class="brand-mark" aria-hidden="true">A</span> APAS</p>
+      <nav aria-label="Account" id="account-nav" hidden>
+        <span id="signed-in-as"></span>
+        <button type="button" id="logout-button" class="button button-secondary">Log out</button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <p id="status" class="visually-hidden" role="status" aria-live="polite"></p>
+    <div id="view">
+      <noscript><p>APAS needs JavaScript enabled in your browser.</p></noscript>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>Academic Performance Analytics System · Team 09</p>
+  </footer>
+</body>
+</html>
