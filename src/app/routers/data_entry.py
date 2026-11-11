@@ -3,7 +3,7 @@
 from datetime import date, datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -47,9 +47,30 @@ class AttendancePayload(BaseModel):
     model_config = {"populate_by_name": True}
 
 
-async def _extract_raw_csv_or_json(request: Request) -> tuple[str, Any]:
-    """Return content-type and body/data."""
+async def _extract_raw_csv_or_json(
+    request: Request,
+    file: UploadFile | None = None,
+) -> tuple[str, Any]:
+    """Return content-type and body/data from UploadFile, multipart form, raw body, or JSON."""
+    if file is not None:
+        content = await file.read()
+        if not content:
+            raise AppError(400, "BAD_FILE", "Empty file uploaded")
+        return "text/csv", content
+
     ct = request.headers.get("content-type", "").lower()
+    if "multipart/form-data" in ct:
+        form = await request.form()
+        for value in form.values():
+            if hasattr(value, "read"):
+                content = await value.read()
+                if not content:
+                    raise AppError(400, "BAD_FILE", "Empty file uploaded")
+                return "text/csv", content
+            elif isinstance(value, str):
+                return "text/csv", value.encode("utf-8")
+        raise AppError(400, "BAD_FILE", "No file found in multipart form")
+
     body = await request.body()
     if not body:
         raise AppError(400, "BAD_FILE", "Empty request payload")
@@ -64,6 +85,7 @@ async def post_marks_entry(
     course_id: int,
     assessment_id: int,
     request: Request,
+    file: UploadFile | None = File(None),
     db: Session = Depends(get_db),
     user: User = Depends(require_roles(Role.FACULTY, Role.ADMIN)),
 ) -> dict[str, Any]:
@@ -73,7 +95,7 @@ async def post_marks_entry(
     Accessible to assigned Faculty or Administrator.
     """
     verify_course_faculty_or_admin(db, course_id, user)
-    ct, body = await _extract_raw_csv_or_json(request)
+    ct, body = await _extract_raw_csv_or_json(request, file)
 
     entries: list[dict[str, Any]] = []
 
@@ -91,24 +113,7 @@ async def post_marks_entry(
         except Exception:
             raise AppError(400, "BAD_FILE", "Invalid JSON payload for marks entry")
     else:
-        # Multipart or text/csv
-        if "multipart/form-data" in ct:
-            from email import message_from_bytes
-
-            msg = message_from_bytes(f"Content-Type: {ct}\r\n\r\n".encode() + body)
-            found_payload = None
-            for part in msg.walk():
-                if part.get_filename() or part.get_content_type() in (
-                    "text/csv",
-                    "text/plain",
-                    "application/octet-stream",
-                ):
-                    found_payload = part.get_payload(decode=True)
-                    if found_payload:
-                        break
-            entries = parse_marks_csv(found_payload or body)
-        else:
-            entries = parse_marks_csv(body)
+        entries = parse_marks_csv(body)
 
     return record_marks_batch(
         db=db,
@@ -126,6 +131,7 @@ async def post_marks_entry(
 async def post_attendance_entry(
     course_id: int,
     request: Request,
+    file: UploadFile | None = File(None),
     db: Session = Depends(get_db),
     user: User = Depends(require_roles(Role.FACULTY, Role.ADMIN)),
 ) -> dict[str, Any]:
@@ -135,7 +141,7 @@ async def post_attendance_entry(
     Accessible to assigned Faculty or Administrator.
     """
     verify_course_faculty_or_admin(db, course_id, user)
-    ct, body = await _extract_raw_csv_or_json(request)
+    ct, body = await _extract_raw_csv_or_json(request, file)
 
     session_date = date.today()
     records: list[dict[str, Any]] = []
@@ -165,24 +171,7 @@ async def post_attendance_entry(
         except Exception:
             raise AppError(400, "BAD_FILE", "Invalid JSON payload for attendance entry")
     else:
-        # Multipart or text/csv
-        if "multipart/form-data" in ct:
-            from email import message_from_bytes
-
-            msg = message_from_bytes(f"Content-Type: {ct}\r\n\r\n".encode() + body)
-            found_payload = None
-            for part in msg.walk():
-                if part.get_filename() or part.get_content_type() in (
-                    "text/csv",
-                    "text/plain",
-                    "application/octet-stream",
-                ):
-                    found_payload = part.get_payload(decode=True)
-                    if found_payload:
-                        break
-            session_date, records = parse_attendance_csv(found_payload or body, session_date)
-        else:
-            session_date, records = parse_attendance_csv(body, session_date)
+        session_date, records = parse_attendance_csv(body, session_date)
 
     return record_attendance_batch(
         db=db,

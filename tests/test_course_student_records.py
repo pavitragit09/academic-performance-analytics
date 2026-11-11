@@ -355,3 +355,17 @@ def test_malformed_csv_does_not_crash(app, engine):
     resp_bad = admin_client.post(f"{API}/students/upload", content=bad_header_csv, headers={"Content-Type": "text/csv"})
     assert resp_bad.status_code == 400
     assert resp_bad.json()["error"]["code"] == "BAD_FILE"
+
+
+def test_upload_via_uploadfile_multipart(app, engine):
+    """Verify CSV import via standard multipart UploadFile."""
+    with Session(engine) as db:
+        admin_client, _, _ = create_user_and_login(app, db, "admin_multipart", models.Role.ADMIN)
+
+    csv_data = "usn,name,department,semester\n1MS21CS099,Multipart Student,CSE,5\n"
+    res = admin_client.post(
+        f"{API}/students/upload",
+        files={"file": ("students.csv", csv_data.encode("utf-8"), "text/csv")},
+    )
+    assert res.status_code == 201
+    assert res.json()["accepted"] == 1
