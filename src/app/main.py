@@ -20,6 +20,7 @@ from src.app.routers import (
     exams,
     faculty_dashboard,
     health,
+    interventions,
     records,
     reports,
     risk,
@@ -67,6 +68,9 @@ def create_app() -> FastAPI:
     application.include_router(data_entry.router, prefix=API_PREFIX)
     application.include_router(reports.router, prefix=API_PREFIX)
     application.include_router(settings.router, prefix=API_PREFIX)
+    application.include_router(interventions.router, prefix=API_PREFIX)
+
+
 
     # Web UI (APAS-NF-004): static pages that call the API above.
     application.mount("/app", StaticFiles(directory=WEB_DIR, html=True), name="web")
