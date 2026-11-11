@@ -20,6 +20,7 @@ from src.app.models import (
     Course,
     Enrollment,
     ExamResult,
+    Faculty,
     MarkEntry,
     Role,
     Student,
@@ -163,3 +164,14 @@ def course_dashboard(
         "lowCompletion": low_completion_students(statuses),
         "students": students,
     }
+
+
+def dashboard_courses(db: Session, user: User) -> list[dict]:
+    """Courses the user may open on the dashboard: all for an admin, own courses for faculty."""
+    query = select(Course).order_by(Course.code)
+    if user.role is not Role.ADMIN:
+        query = query.join(Faculty, Faculty.id == Course.faculty_id).where(Faculty.user_id == user.id)
+    return [
+        {"courseId": course.id, "code": course.code, "title": course.title}
+        for course in db.scalars(query)
+    ]

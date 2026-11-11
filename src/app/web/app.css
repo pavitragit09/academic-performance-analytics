@@ -1,0 +1,140 @@
+/* APAS web UI (APAS-NF-004): responsive layout, WCAG 2.1 AA colours (all text >= 4.5:1). */
+:root {
+  --bg: #f5f7fa;
+  --surface: #ffffff;
+  --text: #101828;
+  --muted: #475467;
+  --border: #c5ccd6;
+  --primary: #1f3a5f;
+  --primary-hover: #16304f;
+  --focus: #1d4ed8;
+  --risk: #b42318;
+  --risk-bg: #fef3f2;
+  --ok: #067647;
+  --ok-bg: #ecfdf3;
+  --bar: #2f5d8a;
+  --radius: 8px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); }
+main { flex: 1; width: 100%; max-width: 1120px; margin: 0 auto; padding: 24px 16px 48px; }
+main:focus { outline: none; }
+h1 { font-size: 1.75rem; line-height: 1.25; margin: 0 0 4px; }
+h2 { font-size: 1.25rem; margin: 32px 0 12px; }
+h3 { font-size: 1.05rem; margin: 0 0 8px; }
+p { margin: 0 0 12px; }
+.muted { color: var(--muted); }
+
+/* Focus is always visible (WCAG 2.4.7). */
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+/* The page heading only receives focus from script, so screen readers announce the new page. */
+#page-title:focus { outline: none; }
+
+.skip-link {
+  position: absolute; left: 8px; top: -48px; z-index: 10;
+  background: var(--surface); color: var(--primary); padding: 8px 12px;
+  border: 2px solid var(--primary); border-radius: var(--radius); font-weight: 600;
+}
+.skip-link:focus { top: 8px; }
+
+.visually-hidden {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.site-header { background: var(--primary); color: #fff; }
+.header-inner {
+  max-width: 1120px; margin: 0 auto; padding: 12px 16px;
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+}
+.brand { margin: 0; font-weight: 700; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
+.brand-mark {
+  display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 6px;
+  background: #fff; color: var(--primary); font-weight: 800;
+}
+#account-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+#account-nav[hidden] { display: none; }
+.site-header .button-secondary { background: transparent; color: #fff; border-color: #fff; }
+.site-header .button-secondary:hover { background: rgba(255, 255, 255, 0.15); }
+.site-header :focus-visible { outline-color: #fff; }
+
+.site-footer { color: var(--muted); text-align: center; padding: 16px; font-size: 0.875rem; }
+
+/* Buttons and form controls: at least 44px tall for touch (WCAG 2.5.5). */
+.button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 44px; padding: 8px 16px; border-radius: var(--radius);
+  border: 2px solid var(--primary); background: var(--primary); color: #fff;
+  font: inherit; font-weight: 600; text-decoration: none; cursor: pointer;
+}
+.button:hover { background: var(--primary-hover); }
+.button-secondary { background: var(--surface); color: var(--primary); }
+.button-secondary:hover { background: #e8eef6; }
+.button-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+label { display: block; font-weight: 600; margin-bottom: 4px; }
+input, select {
+  width: 100%; min-height: 44px; padding: 8px 12px; font: inherit; color: var(--text);
+  background: var(--surface); border: 1px solid #667085; border-radius: var(--radius);
+}
+.field { margin-bottom: 16px; }
+.hint { color: var(--muted); font-size: 0.875rem; margin-top: 4px; }
+
+.panel {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 20px;
+}
+.login-panel { max-width: 420px; margin: 32px auto; }
+
+.alert {
+  border-left: 4px solid var(--risk); background: var(--risk-bg); color: var(--risk);
+  padding: 12px 16px; border-radius: 4px; margin-bottom: 16px; font-weight: 600;
+}
+.alert:empty { display: none; }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin: 16px 0; }
+.toolbar .field { margin: 0; min-width: 240px; flex: 1 1 260px; max-width: 420px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.card .label { color: var(--muted); font-size: 0.875rem; margin: 0; }
+.card .value { font-size: 1.75rem; font-weight: 700; margin: 4px 0 0; }
+
+/* Tables scroll inside their own region on narrow screens, so the page never scrolls sideways. */
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 520px; }
+caption { text-align: left; font-weight: 700; padding: 12px 16px 4px; }
+th, td { text-align: left; padding: 10px 16px; border-top: 1px solid #e4e7ec; vertical-align: top; white-space: nowrap; }
+thead th { background: #eef2f6; border-top: 0; font-size: 0.875rem; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Status is shown with text and a symbol, never colour alone (WCAG 1.4.1). */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.8125rem; font-weight: 700; white-space: nowrap; }
+.badge-risk { background: var(--risk-bg); color: var(--risk); border: 1px solid var(--risk); }
+.badge-ok { background: var(--ok-bg); color: var(--ok); border: 1px solid var(--ok); }
+
+.bar-cell { min-width: 160px; }
+.bar { height: 14px; border-radius: 3px; background: var(--bar); min-width: 2px; }
+
+.risk-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.risk-list li { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--risk); border-radius: 4px; padding: 10px 14px; }
+
+.spaced { margin-top: 16px; }
+
+.empty { color: var(--muted); font-style: italic; }
+
+@media (max-width: 600px) {
+  h1 { font-size: 1.4rem; }
+  main { padding-top: 16px; }
+  .panel { padding: 16px; }
+  .button-row .button { flex: 1 1 auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}

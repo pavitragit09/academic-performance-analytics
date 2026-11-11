@@ -2,8 +2,11 @@
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import Depends, FastAPI
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from src.app.config import API_PREFIX
 from src.app.database import init_db
@@ -22,6 +25,8 @@ from src.app.routers import (
     users,
 )
 from src.app.routers.auth import get_current_user
+
+WEB_DIR = Path(__file__).parent / "web"
 
 
 @asynccontextmanager
@@ -56,6 +61,13 @@ def create_app() -> FastAPI:
     application.include_router(records.router, prefix=API_PREFIX)
     application.include_router(data_entry.router, prefix=API_PREFIX)
     application.include_router(reports.router, prefix=API_PREFIX)
+
+    # Web UI (APAS-NF-004): static pages that call the API above.
+    application.mount("/app", StaticFiles(directory=WEB_DIR, html=True), name="web")
+
+    @application.get("/", include_in_schema=False)
+    def home() -> RedirectResponse:
+        return RedirectResponse("/app/")
 
     return application
 

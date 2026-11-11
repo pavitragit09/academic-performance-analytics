@@ -5,11 +5,20 @@ from sqlalchemy.orm import Session
 
 from src.app.database import get_db
 from src.app.department_summary import department_summary, list_departments
-from src.app.faculty_dashboard import course_dashboard
+from src.app.faculty_dashboard import course_dashboard, dashboard_courses
 from src.app.models import Role, User
 from src.app.routers.auth import require_roles
 
 router = APIRouter(prefix="/dashboard", tags=["Faculty Dashboard"])
+
+
+@router.get("/my-courses")
+def get_my_courses(
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles(Role.FACULTY, Role.ADMIN)),
+) -> dict:
+    """Courses for the web UI's course picker (own courses for faculty, all for admin)."""
+    return {"courses": dashboard_courses(db, user)}
 
 
 @router.get("/courses/{course_id}")
