@@ -8,6 +8,7 @@ from fastapi import Depends, FastAPI
 from src.app.config import API_PREFIX
 from src.app.database import init_db
 from src.app.errors import register_error_handlers
+from src.app.tls import TLSEnforcementMiddleware
 from src.app.routers import (
     assignments,
     auth,
@@ -44,6 +45,9 @@ def create_app() -> FastAPI:
 
     # Register standard error responses.
     register_error_handlers(application)
+
+    # Enforce TLS 1.2+ when APAS_ENFORCE_TLS is set (APAS-SR-001).
+    application.add_middleware(TLSEnforcementMiddleware)
 
     # Register API routers.
     application.include_router(health.router, prefix=API_PREFIX)
