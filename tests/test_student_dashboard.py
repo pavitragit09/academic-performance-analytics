@@ -390,3 +390,184 @@ def test_dashboard_includes_assignments_not_yet_submitted(
     assert pending["status"] is None
     assert pending["score"] is None
     assert pending["max_score"] == 20
+
+
+
+
+def test_attendance_records_include_course_information(
+    client,
+    student_user,
+    dashboard_data,
+):
+    login(client, "student1", "StudentPass123!")
+
+    response = client.get("/api/v1/student/dashboard")
+
+    assert response.status_code == 200
+
+    attendance = response.json()["attendance"]
+
+    assert len(attendance) == 1
+    assert attendance[0]["course_code"] == "CS101"
+    assert attendance[0]["course_title"] == "Data Structures"
+    assert attendance[0]["session_date"] == "2026-10-16"
+    assert attendance[0]["present"] is True
+
+
+def test_marks_are_returned_in_chronological_order(
+    client,
+    db,
+    student_user,
+    dashboard_data,
+):
+    student = dashboard_data
+    enrollment = db.query(models.Enrollment).filter_by(
+        student_id=student.id
+    ).first()
+
+    course = db.query(models.Course).filter_by(
+        code="CS101"
+    ).first()
+
+    later_assessment = models.Assessment(
+        course_id=course.id,
+        name="Internal Assessment 2",
+        max_marks=50,
+        held_on=date(2026, 11, 1),
+    )
+    db.add(later_assessment)
+    db.flush()
+
+    db.add(
+        models.MarkEntry(
+            assessment_id=later_assessment.id,
+            enrollment_id=enrollment.id,
+            marks=45,
+        )
+    )
+    db.commit()
+
+    login(client, "student1", "StudentPass123!")
+
+    response = client.get("/api/v1/student/dashboard")
+
+    assert response.status_code == 200
+
+    marks = response.json()["marks"]
+
+    assert [item["held_on"] for item in marks] == [
+        "2026-10-15",
+        "2026-11-01",
+    ]
+
+
+def test_attendance_is_returned_in_chronological_order(
+    client,
+    db,
+    student_user,
+    dashboard_data,
+):
+    student = dashboard_data
+    enrollment = db.query(models.Enrollment).filter_by(
+        student_id=student.id
+    ).first()
+
+    db.add(
+        models.AttendanceRecord(
+            enrollment_id=enrollment.id,
+            session_date=date(2026, 10, 20),
+            present=False,
+        )
+    )
+    db.add(
+        models.AttendanceRecord(
+            enrollment_id=enrollment.id,
+            session_date=date(2026, 10, 18),
+            present=True,
+        )
+    )
+    db.commit()
+
+    login(client, "student1", "StudentPass123!")
+
+    response = client.get("/api/v1/student/dashboard")
+
+    assert response.status_code == 200
+
+    attendance = response.json()["attendance"]
+
+    assert [item["session_date"] for item in attendance] == [
+        "2026-10-16",
+        "2026-10-18",
+        "2026-10-20",
+    ]
+
+
+def test_student_cannot_see_another_students_attendance(
+    client,
+    db,
+    student_user,
+    dashboard_data,
+):
+    other_user = models.User(
+        username="student2",
+        password_hash=hash_password("StudentPass456!"),
+        role=models.Role.STUDENT,
+        is_active=True,
+    )
+    db.add(other_user)
+    db.flush()
+
+    other_student = models.Student(
+        user_id=other_user.id,
+        usn="PES002",
+        name="Student Two",
+        department="CSE",
+        semester=4,
+    )
+    db.add(other_student)
+    db.flush()
+
+    faculty = db.query(models.Faculty).first()
+
+    other_course = models.Course(
+        code="CS202",
+        title="Database Systems",
+        semester=4,
+        faculty_id=faculty.id,
+    )
+    db.add(other_course)
+    db.flush()
+
+    other_enrollment = models.Enrollment(
+        student_id=other_student.id,
+        course_id=other_course.id,
+    )
+    db.add(other_enrollment)
+    db.flush()
+
+    db.add(
+        models.AttendanceRecord(
+            enrollment_id=other_enrollment.id,
+            session_date=date(2026, 10, 20),
+            present=True,
+        )
+    )
+    db.commit()
+
+    login(client, "student1", "StudentPass123!")
+
+    response = client.get("/api/v1/student/dashboard")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert all(
+        item["course_code"] != "CS202"
+        for item in data["attendance"]
+    )
+    assert all(
+        item["course_code"] != "CS202"
+        for item in data["marks"]
+    )
