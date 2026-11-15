@@ -24,3 +24,13 @@ def get_smtp_port() -> int:
 def get_mail_from() -> str:
     """Sender address used on alert e-mails."""
     return os.getenv("APAS_MAIL_FROM", "apas@localhost")
+
+
+def get_db_pool_size() -> int:
+    """Database connections kept open per process (APAS-NF-003: 200 concurrent users)."""
+    return int(os.getenv("APAS_DB_POOL_SIZE", "20"))
+
+
+def get_db_max_overflow() -> int:
+    """Extra connections allowed when the pool is busy."""
+    return int(os.getenv("APAS_DB_MAX_OVERFLOW", "60"))
